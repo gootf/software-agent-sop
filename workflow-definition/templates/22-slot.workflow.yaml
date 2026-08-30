@@ -1,0 +1,243 @@
+# 22-slot software agent workflow — reconstructed from the S01–S22 graph
+# (see build record for provenance and confidence grades)
+name: software-agent-workflow
+version: 1.0.0
+description: "Full software engineering agent SOP: intake -> route -> understand -> evidence -> analyze -> synthesize -> plan -> implement -> parallel subagents -> integrate -> CI gate -> merge/release -> audit -> closeout"
+
+nodes:
+  - id: S01
+    skill: task-intake
+    role: intake
+    description: "Accept request, idea, or existing project; force clarification of boundaries"
+    outputs: [artifacts/00-requirements.md]
+  - id: S02
+    skill: ask-matt
+    role: router
+    description: "What does this work need? Route to clarify / fix / ready"
+    inputs: [artifacts/00-requirements.md]
+  - id: S03
+    skill: interview-me
+    role: context-builder
+    description: "clarify-requirements: ambiguous intent -> structured requirements"
+    inputs: [artifacts/00-requirements.md]
+    outputs: [artifacts/01-clarified-requirements.md]
+  - id: S04
+    skill: diagnosing-bugs
+    role: context-builder
+    description: "fix-existing-issues: bug path, returns to intake for re-evaluation"
+    inputs: [artifacts/00-requirements.md]
+    outputs: [artifacts/01-fixed-issues.md]
+  - id: S05
+    skill: codebase-context
+    role: context-builder
+    description: "reportSources: extract source evidence from the existing codebase"
+    independent: true
+    outputs: [artifacts/01-source-evidence.md]
+  - id: S06
+    skill: analyze-architecture
+    role: context-builder
+    description: "What exists? Architecture analysis"
+    inputs: [artifacts/01-clarified-requirements.md, artifacts/01-source-evidence.md]
+    outputs: [artifacts/02-architecture-findings.md]
+  - id: S07
+    skill: environment-discovery
+    role: context-builder
+    description: "What constrains us? Dependencies / environment constraints"
+    inputs: [artifacts/01-clarified-requirements.md, artifacts/01-source-evidence.md]
+    outputs: [artifacts/02-dependency-findings.md]
+  - id: S08
+    skill: solution-architecture
+    role: context-builder
+    description: "What should change? Target system design"
+    inputs: [artifacts/01-clarified-requirements.md, artifacts/01-source-evidence.md]
+    outputs: [artifacts/02-design-findings.md]
+  - id: S09
+    skill: check-readiness
+    role: context-builder
+    description: "check-if-already-ready: context sufficient?"
+    inputs: [artifacts/00-requirements.md]
+    outputs: [artifacts/02-readiness.md]
+  - id: S10
+    skill: synthesize-project-context
+    role: context-builder
+    description: "Synthesis hub: converge all findings into the single project state"
+    inputs:
+      - artifacts/01-clarified-requirements.md
+      - artifacts/01-source-evidence.md
+      - artifacts/02-architecture-findings.md
+      - artifacts/02-dependency-findings.md
+      - artifacts/02-design-findings.md
+      - artifacts/02-readiness.md
+    outputs: [PROJECT-CONTEXT.md]
+  - id: S11
+    skill: planning-and-task-breakdown
+    role: context-builder
+    description: "prepare-implementation-plan: understanding -> executable plan (marks parallelizable work)"
+    inputs: [PROJECT-CONTEXT.md]
+    outputs: [artifacts/03-implementation-plan.md]
+  - id: S12
+    skill: implement
+    role: executor
+    description: "Main implementation"
+    inputs: [artifacts/03-implementation-plan.md]
+    outputs: [artifacts/04-implementation/]
+  - id: S13
+    skill: dispatching-parallel-agents
+    role: coordinator
+    description: "subagentsOverview: identify parallelizable work and dispatch"
+    inputs: [artifacts/03-implementation-plan.md]
+    outputs: [artifacts/04-subagent-tasks.md]
+  - id: S14
+    skill: subagent-driven-development
+    role: coordinator
+    description: "orchestrate-subagents: controller with integration feedback loop to S12"
+    inputs: [artifacts/04-subagent-tasks.md, artifacts/04-implementation/]
+    outputs: [artifacts/04-orchestration.md]
+  - id: S15
+    skill: parallel-feature-development
+    role: executor
+    description: "integrate-parallel-work: merge parallel streams"
+    inputs: [artifacts/04-orchestration.md]
+    outputs: [artifacts/04-integrated.md]
+  - id: S16
+    skill: ci-cd-and-automation
+    role: validator
+    description: "github-actions-ci: HARD GATE — agent claims are hypotheses, CI is the test"
+    inputs: [artifacts/04-integrated.md, artifacts/04-implementation/]
+  - id: S17
+    skill: github-pr-workflow
+    role: coordinator
+    description: "merge-pull-request: gate passed -> merge, then bypass or release"
+  - id: S18
+    skill: architecture-audit
+    role: knowledge
+    description: "audit: independent knowledge-maintenance axis (zero in-degree)"
+    independent: true
+    outputs: [artifacts/05-audit-findings.md]
+  - id: S19
+    skill: release-management
+    role: coordinator
+    description: "release-project: optional release path"
+  - id: S20
+    skill: agents-md
+    role: knowledge
+    description: "agents-md: machine-facing knowledge (terminal)"
+    inputs: [artifacts/05-audit-findings.md]
+    outputs: [AGENTS.md]
+  - id: S21
+    skill: documentation-maintenance
+    role: knowledge
+    description: "organize-docs: human-facing documentation, merges into closeout"
+    inputs: [artifacts/05-audit-findings.md]
+    outputs: [artifacts/05-docs-updated.md]
+  - id: S22
+    skill: engineering-closeout
+    role: closeout
+    description: "project-closeout: state archiving — the unique terminal"
+
+edges:
+  - from: S01
+    to: S02
+    via: [artifacts/00-requirements.md]
+  - from: S02
+    to: S03
+    label: "requirements are unclear"
+  - from: S02
+    to: S04
+    label: "existing issue or bug needs fixing"
+  - from: S02
+    to: S09
+    label: "project context is already sufficient"
+  - from: S04
+    to: S01
+    label: "return to initial input for re-evaluation"
+    loop: true
+  - from: S03
+    to: S06
+    label: "clarified requirements"
+  - from: S03
+    to: S07
+    label: "clarified requirements"
+  - from: S03
+    to: S08
+    label: "clarified requirements"
+  - from: S03
+    to: S10
+    label: "clarified requirements"
+  - from: S05
+    to: S06
+    label: "source evidence"
+  - from: S05
+    to: S07
+    label: "source evidence"
+  - from: S05
+    to: S08
+    label: "source evidence"
+  - from: S06
+    to: S10
+    label: "architecture findings"
+  - from: S07
+    to: S10
+    label: "dependency findings"
+  - from: S08
+    to: S10
+    label: "design findings"
+  - from: S09
+    to: S10
+    label: "ready project context"
+  - from: S10
+    to: S11
+    label: "synthesized project context"
+  - from: S11
+    to: S12
+    label: "implementation plan"
+  - from: S12
+    to: S13
+    label: "parallelizable work"
+  - from: S13
+    to: S14
+    label: "subagent tasks and execution status"
+  - from: S12
+    to: S14
+    label: "implementation progress"
+  - from: S14
+    to: S12
+    label: "integrated changes require implementation updates"
+    loop: true
+  - from: S14
+    to: S15
+    label: "frontend implementation work"
+  - from: S14
+    to: S16
+    label: "backend implementation and integration work"
+  - from: S15
+    to: S16
+    label: "integrated frontend changes"
+  - from: S16
+    to: S12
+    label: "build, test, or code-quality checks failed"
+    kind: on_failure
+  - from: S16
+    to: S17
+    label: "all required checks passed successfully"
+    kind: on_pass
+  - from: S17
+    to: S19
+    label: "release deployment is required"
+  - from: S17
+    to: S22
+    label: "no release deployment is required"
+  - from: S19
+    to: S22
+    label: "release successfully completed"
+  - from: S18
+    to: S20
+    label: "update agent operating knowledge"
+  - from: S18
+    to: S21
+    label: "organize project documentation"
+  - from: S21
+    to: S22
+    label: "documentation synchronized"
+
+final: S22
